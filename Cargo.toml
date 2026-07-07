@@ -1,0 +1,20 @@
+[package]
+name = "wg_config_file"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+base64 = { version = "0.22.1" }
+derive_builder = "0.20.2"
+ip_network = { version = "0.4.1", features = ["serde"], optional = true }
+ipnet = { version = "2.12.0", features = ["serde"], optional = true }
+serde = { version = "1.0.228", features = ["derive"] }
+serini = "0.2.2"
+x25519-dalek = { version = "3.0.0-rc.1", features = [
+  "serde",
+  "static_secrets",
+] }
+
+[features]
+ipnet = ["dep:ipnet"]
+ip_network = ["dep:ip_network"]
