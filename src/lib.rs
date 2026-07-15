@@ -6,6 +6,7 @@ use crate::ser::staticsecret_base64;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use derive_builder::Builder;
+use derive_getters::Getters;
 #[cfg(feature = "ip_network")]
 use ip_network::IpNetwork;
 #[cfg(feature = "ipnet")]
@@ -16,7 +17,7 @@ use std::net::SocketAddr;
 use x25519_dalek::PublicKey;
 use x25519_dalek::StaticSecret;
 
-#[derive(Builder, Serialize, Deserialize, Clone)]
+#[derive(Builder, Serialize, Deserialize, Clone, Getters)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(strip_option))]
 pub struct ConfigurationFile {
@@ -43,7 +44,7 @@ impl ConfigurationFile {
     }
 }
 
-#[derive(Builder, Serialize, Deserialize, Clone)]
+#[derive(Builder, Serialize, Deserialize, Clone, Getters)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(strip_option))]
 pub struct Interface {
@@ -76,7 +77,7 @@ struct PeerSection {
     peer: Peer,
 }
 
-#[derive(Builder, Serialize, Deserialize, Clone)]
+#[derive(Builder, Serialize, Deserialize, Clone, Getters)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(strip_option))]
 pub struct Peer {
@@ -115,7 +116,7 @@ mod tests {
     use ip_network::{IpNetwork, Ipv4Network};
     #[cfg(feature = "ipnet")]
     use ipnet::{IpNet as IpNetwork, Ipv4Net as Ipv4Network};
-    use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+    use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
     #[test]
     fn it_works() {
@@ -132,6 +133,24 @@ mod tests {
                     ),
                     IpNetwork::V4(
                         Ipv4Network::new(Ipv4Addr::from_octets([10, 192, 124, 0]), 24).unwrap(),
+                    ),
+                ])
+                .build()
+                .unwrap(),
+            PeerBuilder::default()
+                .public_key_base64("TrMvSoP4jYQlY6RIzBgbssQqY3vxI2Pi+y71lOWWXX0=")
+                .endpoint(SocketAddr::V6(SocketAddrV6::new(
+                    Ipv6Addr::from_segments([0x2607, 0x5300, 0x60, 0x6b0, 0x0, 0x0, 0xc05f, 0x543]),
+                    2468,
+                    0,
+                    0,
+                )))
+                .allowed_ips(vec![
+                    IpNetwork::V4(
+                        Ipv4Network::new(Ipv4Addr::from_octets([10, 192, 122, 4]), 32).unwrap(),
+                    ),
+                    IpNetwork::V4(
+                        Ipv4Network::new(Ipv4Addr::from_octets([192, 168, 0, 0]), 16).unwrap(),
                     ),
                 ])
                 .build()
