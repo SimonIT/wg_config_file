@@ -212,11 +212,6 @@ impl PeerBuilder {
         self
     }
 
-    pub fn endpoint_string(&mut self, value: String) -> &mut Self {
-        self.endpoint = Some(Some(value));
-        self
-    }
-
     pub fn persistent_keepalive_off(&mut self) -> &mut Self {
         self.persistent_keepalive = Some(None);
         self
@@ -298,7 +293,7 @@ mod tests {
                 .unwrap(),
             PeerBuilder::default()
                 .public_key_base64("gN65BkIKy1eCE9pP1wdc8ROUtkHLF2PfAqYdyYBz6EA=")
-                .endpoint_string("test.wireguard.com:18981".to_string())
+                .endpoint("test.wireguard.com:18981".to_string())
                 .allowed_ips(vec![IpNetwork::V4(
                     Ipv4Network::new(Ipv4Addr::from_octets([10, 10, 10, 230]), 32).unwrap(),
                 )])
