@@ -10,7 +10,7 @@ derive_builder = "0.20.2"
 ip_network = { version = "0.4.1", features = ["serde"], optional = true }
 ipnet = { version = "2.12.2", features = ["serde"], optional = true }
 serde = { version = "1.0.229", features = ["derive"] }
-serini = { git = "https://github.com/jspngh/serini.git", branch = "feature/serializer-config" }
+serini = { git = "https://github.com/SimonIT/serini.git" }
 x25519-dalek = { version = "3.0.0", features = ["serde", "static_secrets"] }
 
 [features]

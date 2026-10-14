@@ -28,6 +28,7 @@ use x25519_dalek::StaticSecret;
 
 const SER_CONFIG: serini::ser::Config = serini::ser::Config {
     none_as_comment: false, // WG doesn't allow comments
+    numbered_sequences: false,
 };
 
 #[derive(Builder, Serialize, Deserialize, Clone, Getters)]
@@ -36,7 +37,6 @@ const SER_CONFIG: serini::ser::Config = serini::ser::Config {
 pub struct ConfigurationFile {
     interface: Interface,
     #[builder(default)]
-    #[serde(skip_serializing)]
     peers: Vec<Peer>,
 }
 
@@ -45,13 +45,7 @@ impl ConfigurationFile {
      * Returns the configuration as INI-based format like wg expects.
      */
     pub fn format(&self) -> Result<String, serini::Error> {
-        let interface = to_string_with_config(self, SER_CONFIG)?;
-        let peers = self
-            .peers
-            .iter()
-            .map(|p| to_string_with_config(&PeerSection { peer: p.clone() }, SER_CONFIG))
-            .collect::<Result<Vec<String>, _>>()?;
-        Ok(format!("{}\n{}", interface, peers.join("\n")))
+        to_string_with_config(self, SER_CONFIG)
     }
 }
 
@@ -189,12 +183,6 @@ pub enum Table {
     Number(u32),
     #[default]
     Auto,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "PascalCase")]
-struct PeerSection {
-    peer: Peer,
 }
 
 #[derive(Builder, Serialize, Deserialize, Clone, Getters)]
