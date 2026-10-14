@@ -5,13 +5,12 @@ pub(crate) mod comma_sequence {
     use serini::to_string;
 
     pub fn serialize<S: Serializer, T: Serialize>(v: &[T], s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_str(
-            v.iter()
-                .map(|i| to_string(i).expect("Failed to serialize"))
-                .collect::<Vec<String>>()
-                .join(", ")
-                .as_str(),
-        )
+        let items = v
+            .iter()
+            .map(to_string)
+            .collect::<Result<Vec<String>, _>>()
+            .map_err(serde::ser::Error::custom)?;
+        s.serialize_str(&items.join(", "))
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
@@ -27,13 +26,12 @@ pub(crate) mod semicolon_sequence {
     use serini::to_string;
 
     pub fn serialize<S: Serializer, T: Serialize>(v: &[T], s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_str(
-            v.iter()
-                .map(|i| to_string(i).expect("Failed to serialize"))
-                .collect::<Vec<String>>()
-                .join("; ")
-                .as_str(),
-        )
+        let items = v
+            .iter()
+            .map(to_string)
+            .collect::<Result<Vec<String>, _>>()
+            .map_err(serde::ser::Error::custom)?;
+        s.serialize_str(&items.join("; "))
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
@@ -60,12 +58,9 @@ pub(crate) mod staticsecret_base64 {
         let base64 = String::deserialize(d)?;
         BASE64_STANDARD
             .decode(base64.as_bytes())
-            .map(|bytes| {
-                StaticSecret::from(
-                    <[u8; 32]>::try_from(bytes.as_slice()).expect("Invalid key length"),
-                )
-            })
             .map_err(serde::de::Error::custom)
+            .and_then(|bytes| super::key_from_bytes(&bytes))
+            .map(StaticSecret::from)
     }
 }
 
@@ -85,10 +80,9 @@ pub(crate) mod publickey_base64 {
         let base64 = String::deserialize(d)?;
         BASE64_STANDARD
             .decode(base64.as_bytes())
-            .map(|bytes| {
-                PublicKey::from(<[u8; 32]>::try_from(bytes.as_slice()).expect("Invalid key length"))
-            })
             .map_err(serde::de::Error::custom)
+            .and_then(|bytes| super::key_from_bytes(&bytes))
+            .map(PublicKey::from)
     }
 }
 
@@ -119,9 +113,9 @@ pub(crate) mod presharedkey_base64 {
             None | Some("") => Ok(None),
             Some(v) => BASE64_STANDARD
                 .decode(v.as_bytes())
-                .map(|bytes| <[u8; 32]>::try_from(bytes.as_slice()).expect("Invalid key length"))
-                .map(Some)
-                .map_err(serde::de::Error::custom),
+                .map_err(serde::de::Error::custom)
+                .and_then(|bytes| super::key_from_bytes(&bytes))
+                .map(Some),
         }
     }
 }
@@ -212,6 +206,10 @@ where
             .map(|value| if value == 0 { None } else { Some(value) })
             .map_err(serde::de::Error::custom),
     }
+}
+
+fn key_from_bytes<E: serde::de::Error>(bytes: &[u8]) -> Result<[u8; 32], E> {
+    <[u8; 32]>::try_from(bytes).map_err(|_| E::invalid_length(bytes.len(), &"a 32 byte key"))
 }
 
 fn split_sequence<'de, T, E>(raw: &str, delimiter: char) -> Result<Vec<T>, E>

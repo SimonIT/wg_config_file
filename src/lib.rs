@@ -21,10 +21,14 @@ use ip_network::IpNetwork;
 #[cfg(feature = "ipnet")]
 use ipnet::IpNet as IpNetwork;
 use serde::{Deserialize, Serialize};
-use serini::to_string;
+use serini::to_string_with_config;
 use std::net::SocketAddr;
 use x25519_dalek::PublicKey;
 use x25519_dalek::StaticSecret;
+
+const SER_CONFIG: serini::ser::Config = serini::ser::Config {
+    none_as_comment: false, // WG doesn't allow comments
+};
 
 #[derive(Builder, Serialize, Deserialize, Clone, Getters)]
 #[serde(rename_all = "PascalCase")]
@@ -40,16 +44,14 @@ impl ConfigurationFile {
     /**
      * Returns the configuration as INI-based format like wg expects.
      */
-    pub fn format(&self) -> String {
-        format!(
-            "{}\n{}",
-            to_string(self).unwrap(),
-            self.peers
-                .iter()
-                .map(|p| to_string(&PeerSection { peer: p.clone() }).unwrap())
-                .collect::<Vec<String>>()
-                .join("\n")
-        )
+    pub fn format(&self) -> Result<String, serini::Error> {
+        let interface = to_string_with_config(self, SER_CONFIG)?;
+        let peers = self
+            .peers
+            .iter()
+            .map(|p| to_string_with_config(&PeerSection { peer: p.clone() }, SER_CONFIG))
+            .collect::<Result<Vec<String>, _>>()?;
+        Ok(format!("{}\n{}", interface, peers.join("\n")))
     }
 }
 
@@ -364,6 +366,6 @@ mod tests {
             .interface(interface)
             .peers(peers)
             .build();
-        println!("{}", config.unwrap().format())
+        println!("{}", config.unwrap().format().unwrap())
     }
 }
